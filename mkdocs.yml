@@ -1,0 +1,65 @@
+site_name: bhut
+site_description: Barnes–Hut N-body accelerator for Python (array-agnostic).
+site_url: https://<YOUR_GH_USERNAME>.github.io/bhut
+repo_url: https://github.com/<YOUR_GH_USERNAME>/bhut
+edit_uri: edit/main/
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Usage: usage.md
+  - API Reference:
+    - Overview: api/index.md
+  - Developer Guide:
+    - Contributing: dev/contributing.md
+    - Design & Architecture: dev/design.md
+  - Theory:
+    - Barnes–Hut: theory/barnes-hut.md
+    - Complexity: theory/complexity.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.snippets
+  - pymdownx.details
+  - pymdownx.tabbed
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: true
+            separate_signature: true
+  - mkdocs-jupyter
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js
