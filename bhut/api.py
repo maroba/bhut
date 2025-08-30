@@ -301,8 +301,6 @@ def accelerations(
     ------
     ValueError
         If input shapes are incompatible or parameters are invalid
-    NotImplementedError
-        Core tree building and evaluation functions are not yet implemented
     """
     # Validate criterion and multipole parameters
     if criterion != "bh":
@@ -504,11 +502,6 @@ class Tree:
         -------
         self : Tree
             Returns self for method chaining
-            
-        Raises
-        ------
-        NotImplementedError
-            Tree building is not yet implemented
         """
         self._tree = build_tree(
             self.positions, self.masses, 
