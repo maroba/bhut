@@ -6,8 +6,6 @@
 
 A high-performance Barnes-Hut N-body accelerator that is array-agnostic, supporting both NumPy and Dask arrays for distributed computation.
 
-> **Status**: Fully functional with comprehensive test coverage (153+ tests passing). Ready for scientific computing applications.
-
 [![CI](https://github.com/maroba/bhut/workflows/CI/badge.svg)](https://github.com/maroba/bhut/actions)
 [![PyPI](https://img.shields.io/pypi/v/bhut.svg)](https://pypi.org/project/bhut/)
 [![Python](https://img.shields.io/pypi/pyversions/bhut.svg)](https://pypi.org/project/bhut/)
@@ -147,15 +145,15 @@ print(f"Numba acceleration: {'✓ Available' if HAVE_NUMBA else '✗ Not availab
 
 ## Features
 
-- **🚀 High Performance**: O(N log N) tree construction, O(M log N) force evaluation
-- **⚡ Numba Acceleration**: Optional JIT compilation for ~27x speedup in particle interactions
-- **🔀 Array-Agnostic**: Seamless support for NumPy and Dask arrays
-- **☁️ Distributed**: Built-in Dask integration for large-scale computation
-- **🎯 Accurate**: Configurable Barnes-Hut approximation with error control
-- **🔄 Efficient Updates**: Tree refit/rebuild for time-stepping simulations
-- **🎲 Deterministic**: Stable Morton ordering ensures reproducible results
-- **📏 Multi-dimensional**: Support for 2D and 3D spatial problems
-- **🧪 Thoroughly Tested**: Comprehensive test suite with 153+ tests covering unit, integration, performance, validation, and edge cases
+- ** High Performance**: O(N log N) tree construction, O(M log N) force evaluation
+- ** Numba Acceleration**: Optional JIT compilation for ~27x speedup in particle interactions
+- ** Array-Agnostic**: Seamless support for NumPy and Dask arrays
+- ** Distributed**: Built-in Dask integration for large-scale computation
+- ** Accurate**: Configurable Barnes-Hut approximation with error control
+- ** Efficient Updates**: Tree refit/rebuild for time-stepping simulations
+- ** Deterministic**: Stable Morton ordering ensures reproducible results
+- ** Multi-dimensional**: Support for 2D and 3D spatial problems
+- ** Thoroughly Tested**: Comprehensive test suite with 153+ tests covering unit, integration, performance, validation, and edge cases
 
 ## API Reference
 
