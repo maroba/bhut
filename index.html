@@ -17,7 +17,7 @@
         <link rel="next" href="getting-started/">
       
       
-      <link rel="icon" href="assets/logo.svg">
+      <link rel="icon" href="assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
@@ -75,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#bhut" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -87,7 +92,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="." title="bhut" class="md-header__button md-logo" aria-label="bhut" data-md-component="logo">
       
-  <img src="assets/logo.svg" alt="logo">
+  <img src="assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -340,7 +345,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="." title="bhut" class="md-nav__button md-logo" aria-label="bhut" data-md-component="logo">
       
-  <img src="assets/logo.svg" alt="logo">
+  <img src="assets/logo.png" alt="logo">
 
     </a>
     bhut
@@ -373,6 +378,21 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="." class="md-nav__link md-nav__link--active">
         
@@ -385,6 +405,61 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#key-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Features
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Install
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Start
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation Sections
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -716,6 +791,52 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#key-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Features
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Install
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Start
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation Sections
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -734,9 +855,37 @@
   
 
 
-  <h1>Home</h1>
+<h1 id="bhut">bhut<a class="headerlink" href="#bhut" title="Permanent link">&para;</a></h1>
+<p><strong>bhut</strong> is a fast, flexible Barnes-Hut algorithm implementation for N-body force calculations in Python. It provides O(N log N) tree construction and O(M log N) force evaluation, making it ideal for large-scale simulations in astrophysics, molecular dynamics, and other domains requiring efficient long-range force computations.</p>
+<h2 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Fast</strong>: Optimized tree construction and traversal algorithms</li>
+<li><strong>Flexible</strong>: Multiple backends (NumPy, Dask) for different scales</li>
+<li><strong>Accurate</strong>: Configurable approximation parameters</li>
+<li><strong>Pythonic</strong>: Clean API supporting both functional and object-oriented usage</li>
+</ul>
+<h2 id="quick-install">Quick Install<a class="headerlink" href="#quick-install" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>bhut
+</code></pre></div>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">bhut</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="c1"># Generate some particles</span>
+<span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">masses</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
 
+<span class="c1"># Compute forces</span>
+<span class="n">forces</span> <span class="o">=</span> <span class="n">bhut</span><span class="o">.</span><span class="n">force</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">masses</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="documentation-sections">Documentation Sections<a class="headerlink" href="#documentation-sections" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><a href="getting-started/">Getting Started</a></strong> - Installation and first examples</li>
+<li><strong><a href="usage/">Usage Guide</a></strong> - Parameters, 2D/3D usage, advanced features</li>
+<li><strong><a href="api/">API Reference</a></strong> - Complete function and class documentation</li>
+<li><strong><a href="theory/barnes-hut/">Theory</a></strong> - Mathematical background and algorithms</li>
+<li><strong><a href="dev/contributing/">Development</a></strong> - Contributing and development setup</li>
+</ul>
 
 
 
