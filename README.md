@@ -151,12 +151,12 @@ print(f"Numba acceleration: {'✓ Available' if HAVE_NUMBA else '✗ Not availab
 
 ## Features
 
-- ** High Performance**: O(N log N) tree construction, O(M log N) force evaluation
-- ** Numba Acceleration**: Optional JIT compilation for ~27x speedup in particle interactions
-- ** Array-Agnostic**: Seamless support for NumPy and Dask arrays
-- ** Distributed**: Built-in Dask integration for large-scale computation
-- ** Accurate**: Configurable Barnes-Hut approximation with error control
-- ** Efficient Updates**: Tree refit/rebuild for time-stepping simulations
+- **High Performance**: O(N log N) tree construction, O(M log N) force evaluation
+- **Numba Acceleration**: Optional JIT compilation for ~27x speedup in particle interactions
+- **Array-Agnostic**: Seamless support for NumPy and Dask arrays
+- **Distributed**: Built-in Dask integration for large-scale computation
+- **Accurate**: Configurable Barnes-Hut approximation with error control
+- **Efficient Updates**: Tree refit/rebuild for time-stepping simulations
 
 ## Parameter Tuning Guide
 

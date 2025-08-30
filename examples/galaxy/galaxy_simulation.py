@@ -2,14 +2,25 @@
 """
 Galaxy Simulation using bhut Barnes-Hut N-body accelerator
 
-This script simulates a galaxy of 1000 stars of equal mass using the
-bhut package for efficient gravitational force calculations.
+This script simulates a galaxy of stars using the bhut package for efficient 
+gravitational force calculations combined with scipy's adaptive ODE integrators.
+
+Features:
+- Adaptive step size integration using scipy.integrate.solve_ivp
+- Multiple integration methods (RK45, DOP853, Radau, BDF, LSODA)
+- 2D and 3D animation generation
+- Energy conservation analysis
+- Escaper removal system
+- Virial equilibrium initial conditions
+
+Requires: numpy, matplotlib, scipy, bhut
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
+from scipy.integrate import solve_ivp
 import bhut
 
 
@@ -173,39 +184,51 @@ def check_virial_equilibrium(positions, velocities, masses, G=1.0, softening=0.1
         return False
 
 
-def simulate_galaxy(n_stars=100, n_steps=50, dt=0.01, theta=0.5, softening=0.1, galaxy_radius=10.0, remove_escapers=False, escaper_threshold=2.5):
+def simulate_galaxy(n_stars=100, t_end=1.0, theta=0.5, softening=0.1, galaxy_radius=10.0, 
+                   remove_escapers=False, escaper_threshold=2.5, method='RK45', rtol=1e-3, atol=1e-6,
+                   progress_steps=10, frames_per_time_unit=50):
     """
-    Run a galaxy simulation using the Barnes-Hut algorithm.
+    Simulate a galaxy using scipy's ODE integrators with progress reporting.
+    
+    This version uses chunked integration with scipy.integrate.solve_ivp for progress updates.
     
     Parameters
     ----------
     n_stars : int
-        Number of stars
-    n_steps : int
-        Number of time steps
-    dt : float
-        Time step size
+        Number of stars in the galaxy
+    t_end : float
+        Final simulation time
     theta : float
-        Barnes-Hut opening angle parameter
+        Barnes-Hut approximation parameter
     softening : float
-        Gravitational softening length
+        Gravitational softening parameter
     galaxy_radius : float
         Characteristic radius of the galaxy (used for escaper removal)
     remove_escapers : bool
         If True, remove stars that escape beyond escaper_threshold * galaxy_radius
     escaper_threshold : float
         Multiplier for galaxy_radius to define escaper removal distance
+    method : str
+        Integration method ('RK45', 'DOP853', 'Radau', 'BDF', 'LSODA')
+    rtol, atol : float
+        Relative and absolute tolerance for the integrator
+    progress_steps : int
+        Number of integration chunks for progress reporting
+    frames_per_time_unit : int
+        Number of animation frames per simulation time unit (affects animation smoothness)
         
     Returns
     -------
-    trajectory : ndarray, shape (n_steps+1, N, 3)
-        Positions at each time step (N may decrease if escapers are removed)
-    velocities_history : ndarray, shape (n_steps+1, N, 3)
-        Velocities at each time step
-    masses : ndarray, shape (N,)
-        Masses of stars (may decrease)
+    trajectory : ndarray, shape (n_eval, n_stars, 3)
+        Positions at evaluation times
+    velocities_history : ndarray, shape (n_eval, n_stars, 3)
+        Velocities at evaluation times
+    masses : ndarray, shape (n_stars,)
+        Final masses
     escaper_counts : list
-        Number of stars remaining at each time step
+        Number of remaining stars at each evaluation time
+    times : ndarray
+        Actual evaluation times used
     """
     print(f"Initializing galaxy with {n_stars} stars...")
     
@@ -215,59 +238,23 @@ def simulate_galaxy(n_stars=100, n_steps=50, dt=0.01, theta=0.5, softening=0.1, 
     # Check virial equilibrium
     is_stable = check_virial_equilibrium(positions, velocities, masses, G=1.0, softening=softening)
     
-    # Store trajectory and velocities for energy calculation
-    trajectory = []
-    velocities_history = []
-    escaper_counts = []
-    
     # Track which stars are still active (not escaped)
-    active_mask = np.ones(n_stars, dtype=bool)  # All stars start active
+    active_mask = np.ones(n_stars, dtype=bool)
     
-    # Store initial conditions (all stars present)
-    full_positions = np.full((n_stars, 3), np.nan)
-    full_velocities = np.full((n_stars, 3), np.nan)
-    full_positions[active_mask] = positions
-    full_velocities[active_mask] = velocities
-    trajectory.append(full_positions.copy())
-    velocities_history.append(full_velocities.copy())
-    escaper_counts.append(len(positions))
-    
-    # Create tree object for efficient updates
-    tree = bhut.Tree(positions, masses, leaf_size=16, dim=3)  # Smaller leaf size for fewer stars
-    tree.build()
-    
-    print("Starting simulation...")
-    print(f"Time steps: {n_steps}, dt: {dt}")
-    print(f"Barnes-Hut theta: {theta}, softening: {softening}")
-    print("Progress: ", end="", flush=True)
-    
-    # Track tree rebuilds vs refits
-    n_rebuilds = 0
-    n_refits = 0
-    
-    # Main simulation loop using leapfrog integration
-    for step in range(n_steps):
-        if step % max(1, n_steps // 20) == 0:
-            percent = 100 * step / n_steps
-            print(f"{percent:.0f}%", end="... " if step < n_steps - 1 else "", flush=True)
+    def gravitational_ode(t, y):
+        """
+        ODE function for scipy integrator.
+        y = [x1, y1, z1, x2, y2, z2, ..., vx1, vy1, vz1, vx2, vy2, vz2, ...]
+        """
+        n_active = np.sum(active_mask)
         
-        # Compute accelerations using Barnes-Hut algorithm
-        accelerations = tree.accelerations(
-            theta=theta,
-            softening=softening,
-            G=1.0
-        )
+        # Extract positions and velocities from the state vector
+        pos = y[:3*n_active].reshape(n_active, 3)
+        vel = y[3*n_active:].reshape(n_active, 3)
         
-        # Leapfrog integration
-        # Update velocities (half step)
-        velocities += 0.5 * dt * accelerations
-        
-        # Update positions (full step)
-        positions += dt * velocities
-        
-        # Remove escapers if enabled
+        # Handle escaper removal
         if remove_escapers:
-            radii = np.linalg.norm(positions, axis=1)
+            radii = np.linalg.norm(pos, axis=1)
             keep_local = radii < escaper_threshold * galaxy_radius
             
             if not np.all(keep_local):
@@ -277,55 +264,144 @@ def simulate_galaxy(n_stars=100, n_steps=50, dt=0.01, theta=0.5, softening=0.1, 
                 escaped_global_indices = current_active_indices[escaped_local_indices]
                 active_mask[escaped_global_indices] = False
                 
-                # Keep only non-escaped stars for continued simulation
-                positions = positions[keep_local]
-                velocities = velocities[keep_local]
-                active_masses = masses[active_mask]
-                
-                # Rebuild tree with remaining stars
-                tree = bhut.Tree(positions, active_masses, leaf_size=16, dim=3)
-                tree.build()
+                # Keep only non-escaped stars
+                pos = pos[keep_local]
+                vel = vel[keep_local]
+                n_active = len(pos)
         
-        # Update tree with new positions (refit for efficiency)
-        if step < n_steps - 1:  # Don't refit on last step
-            # Check if we should refit or rebuild
-            try:
-                tree.refit(positions)
-                n_refits += 1
-            except Exception:
-                # If refit fails, rebuild the tree
-                active_masses = masses[active_mask]
-                tree.rebuild(positions, active_masses)
-                n_rebuilds += 1
+        if n_active == 0:
+            return np.zeros_like(y)
         
-        # Update velocities (half step)
+        # Calculate accelerations using Barnes-Hut
+        active_masses = masses[active_mask]
+        tree = bhut.Tree(pos, active_masses, leaf_size=16, dim=3)
+        tree.build()
+        
         accelerations = tree.accelerations(
             theta=theta,
             softening=softening,
             G=1.0
         )
-        velocities += 0.5 * dt * accelerations
         
-        # Store positions and velocities in full arrays
-        full_positions = np.full((n_stars, 3), np.nan)
-        full_velocities = np.full((n_stars, 3), np.nan)
-        full_positions[active_mask] = positions
-        full_velocities[active_mask] = velocities
-        trajectory.append(full_positions.copy())
-        velocities_history.append(full_velocities.copy())
-        escaper_counts.append(len(positions))
+        # Construct derivative: [velocities, accelerations]
+        dydt = np.zeros(6*n_active)
+        dydt[:3*n_active] = vel.flatten()  # dx/dt = v
+        dydt[3*n_active:] = accelerations.flatten()  # dv/dt = a
+        
+        return dydt
     
-    print("100% Complete!")
-    print(f"Tree operations: {n_refits} refits, {n_rebuilds} rebuilds")
-    if remove_escapers:
-        print(f"Final star count: {escaper_counts[-1]} (started with {escaper_counts[0]})")
-    print("Simulation complete!")
+    # Initial state vector: [positions, velocities]
+    current_state = np.concatenate([positions.flatten(), velocities.flatten()])
+    current_time = 0.0
     
-    # Convert lists to arrays - no padding needed now since all arrays are same size
-    traj_arr = np.array(trajectory)
-    vel_arr = np.array(velocities_history)
+    # Setup for chunked integration
+    dt_chunk = t_end / progress_steps
     
-    return traj_arr, vel_arr, masses, escaper_counts
+    # Calculate total number of frames based on simulation time and desired frame rate
+    total_frames = max(11, int(t_end * frames_per_time_unit) + 1)  # Minimum 11 frames
+    frames_per_chunk = max(2, total_frames // progress_steps)  # At least 2 points per chunk
+    
+    # Storage for results
+    all_times = [0.0]
+    all_trajectories = []
+    all_velocities = []
+    all_escaper_counts = []
+    
+    # Store initial state
+    full_positions = np.full((n_stars, 3), np.nan)
+    full_velocities = np.full((n_stars, 3), np.nan)
+    full_positions[active_mask] = positions
+    full_velocities[active_mask] = velocities
+    all_trajectories.append(full_positions.copy())
+    all_velocities.append(full_velocities.copy())
+    all_escaper_counts.append(np.sum(active_mask))
+    
+    print(f"Starting chunked scipy integration...")
+    print(f"Method: {method}, rtol: {rtol}, atol: {atol}")
+    print(f"Integration time: 0 to {t_end} in {progress_steps} chunks")
+    
+    total_nfev = 0
+    
+    # Chunked integration loop
+    for step in range(progress_steps):
+        try:
+            # Time span for this chunk
+            t_span = (current_time, current_time + dt_chunk)
+            
+            # Number of evaluation points within this chunk based on frame rate
+            # For the last chunk, adjust to ensure we hit exactly t_end
+            if step == progress_steps - 1:
+                # Last chunk - make sure we end exactly at t_end
+                t_eval_chunk = np.linspace(t_span[0], t_end, frames_per_chunk)
+            else:
+                t_eval_chunk = np.linspace(t_span[0], t_span[1], frames_per_chunk)
+            
+            # Solve this chunk
+            sol = solve_ivp(
+                gravitational_ode, 
+                t_span, 
+                current_state,
+                method=method,
+                t_eval=t_eval_chunk,
+                rtol=rtol,
+                atol=atol,
+                dense_output=False
+            )
+            
+            if not sol.success:
+                print(f"Warning: Integration failed at step {step+1} with message: {sol.message}")
+                break
+                
+            total_nfev += sol.nfev
+            
+            # Update current state for next chunk
+            current_state = sol.y[:, -1]
+            current_time = sol.t[-1]
+            
+            # Process and store results (skip first point except for first chunk)
+            start_idx = 1 if step > 0 else 0
+            for i in range(start_idx, len(sol.t)):
+                t = sol.t[i]
+                n_active = np.sum(active_mask)
+                
+                if n_active > 0:
+                    # Extract positions and velocities
+                    pos_active = sol.y[:3*n_active, i].reshape(n_active, 3)
+                    vel_active = sol.y[3*n_active:6*n_active, i].reshape(n_active, 3)
+                else:
+                    pos_active = np.empty((0, 3))
+                    vel_active = np.empty((0, 3))
+                
+                # Store in full arrays with NaN for escaped stars
+                full_positions = np.full((n_stars, 3), np.nan)
+                full_velocities = np.full((n_stars, 3), np.nan)
+                if n_active > 0:
+                    full_positions[active_mask] = pos_active
+                    full_velocities[active_mask] = vel_active
+                
+                all_trajectories.append(full_positions.copy())
+                all_velocities.append(full_velocities.copy())
+                all_escaper_counts.append(n_active)
+                if i > 0 or step == 0:  # Don't duplicate time points
+                    all_times.append(t)
+            
+            # Progress reporting
+            progress = (step + 1) / progress_steps * 100
+            print(f"  Integration progress: {progress:.1f}% (chunk {step+1}/{progress_steps}, {np.sum(active_mask)} stars)")
+            
+        except Exception as e:
+            print(f"Integration failed at chunk {step+1}: {e}")
+            break
+    
+    print("Integration complete!")
+    print(f"Total function evaluations: {total_nfev}")
+    print(f"Final star count: {all_escaper_counts[-1]} (started with {all_escaper_counts[0]})")
+    
+    # Convert to arrays
+    traj_arr = np.array(all_trajectories)
+    vel_arr = np.array(all_velocities)
+    
+    return traj_arr, vel_arr, masses, all_escaper_counts, np.array(all_times)
 
 
 def calculate_total_energy(trajectory, velocities_history, masses, softening=0.1, G=1.0):
@@ -538,361 +614,179 @@ def create_galaxy_animation_3d(trajectory, save_filename='galaxy_evolution_3d.gi
     print(f"3D Animation saved as: {save_filename}")
 
 
-def analyze_energy_conservation(trajectory, velocities_history, masses, dt):
+def plot_energy_conservation(times, kinetic_history, potential_history, total_history):
     """
-    Analyze energy conservation and provide diagnostics.
+    Create a plot showing energy conservation during the simulation.
     
     Parameters
     ----------
-    trajectory : ndarray
-        Position history
-    velocities_history : ndarray
-        Velocity history  
-    masses : ndarray
-        Particle masses
-    dt : float
-        Time step used
-        
-    Returns
-    -------
-    dict : Analysis results
-    """
-    times, kinetic, potential, total = calculate_total_energy(
-        trajectory, velocities_history, masses
-    )
-    
-    # Calculate various energy drift metrics
-    energy_drift = total[-1] - total[0]
-    
-    # Handle divide by zero for relative drift calculation
-    if abs(total[0]) > 1e-10:
-        relative_drift = energy_drift / abs(total[0]) * 100
-        max_excursion = np.max(np.abs(total - total[0])) / abs(total[0]) * 100
-        systematic_component = np.mean(np.gradient(total)) * len(times) / abs(total[0]) * 100
-    else:
-        relative_drift = float('nan')
-        max_excursion = float('nan') 
-        systematic_component = float('nan')
-    
-    # Calculate energy drift rate
-    drift_rate = energy_drift / (len(times) * dt)
-    
-    # Calculate maximum energy excursion (already handled above)
-    # max_excursion = np.max(np.abs(total - total[0])) / abs(total[0]) * 100
-    
-    # Analyze if drift is systematic (monotonic) or oscillatory
-    energy_gradient = np.gradient(total)
-    # systematic_drift = np.mean(energy_gradient) * len(times) (already calculated above)
-    
-    analysis = {
-        'total_drift_percent': relative_drift,
-        'drift_rate': drift_rate,
-        'max_excursion_percent': max_excursion,
-        'systematic_component': systematic_component,
-        'is_monotonic': np.all(energy_gradient > 0) or np.all(energy_gradient < 0)
-    }
-    
-    return analysis
-
-
-def suggest_improvements(analysis, dt, theta, softening):
-    """
-    Suggest parameter improvements based on energy analysis.
-    """
-    print(f"\n" + "="*50)
-    print("ENERGY CONSERVATION ANALYSIS")
-    print("="*50)
-    
-    # Handle NaN values for display
-    drift_str = f"{analysis['total_drift_percent']:.2f}%" if not np.isnan(analysis['total_drift_percent']) else "N/A"
-    excursion_str = f"{analysis['max_excursion_percent']:.2f}%" if not np.isnan(analysis['max_excursion_percent']) else "N/A"
-    
-    print(f"Total energy drift: {drift_str}")
-    print(f"Maximum excursion: {excursion_str}")
-    print(f"Drift is {'systematic' if analysis['is_monotonic'] else 'oscillatory'}")
-    
-    suggestions = []
-    
-    if abs(analysis['total_drift_percent']) > 0.5:
-        if dt > 0.01:
-            suggestions.append(f"• Reduce time step: current dt={dt:.3f}, try dt={dt*0.5:.3f}")
-        
-        if theta > 0.2:
-            suggestions.append(f"• Use stricter Barnes-Hut criterion: current θ={theta}, try θ={theta*0.6:.1f}")
-        
-        if softening > 0.05:
-            suggestions.append(f"• Reduce softening: current ε={softening:.2f}, try ε={softening*0.5:.2f}")
-            
-        if analysis['is_monotonic']:
-            suggestions.append("• Systematic drift suggests integration error - try smaller dt")
-        else:
-            suggestions.append("• Oscillatory drift suggests force approximation errors - try smaller θ")
-    
-    if suggestions:
-        print("\nSUGGESTED IMPROVEMENTS:")
-        for suggestion in suggestions:
-            print(suggestion)
-    else:
-        print("\n✓ Energy conservation is acceptable (<0.5% drift)")
-    
-    print(f"\nCURRENT PARAMETERS:")
-    print(f"  Time step (dt): {dt}")
-    print(f"  Barnes-Hut θ: {theta}")
-    print(f"  Softening: {softening}")
-
-
-def plot_energy_evolution(times, kinetic_energy, potential_energy, total_energy, save_filename='galaxy_energy.png'):
-    """
-    Plot energy evolution and save to file.
-    
-    Parameters
-    ----------
-    times : ndarray
-        Time points
-    kinetic_energy : ndarray
+    times : array
+        Time values
+    kinetic_history : array
         Kinetic energy at each time step
-    potential_energy : ndarray
-        Potential energy at each time step
-    total_energy : ndarray
+    potential_history : array
+        Potential energy at each time step  
+    total_history : array
         Total energy at each time step
-    save_filename : str
-        Filename to save the plot
     """
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 12))
+    import matplotlib.pyplot as plt
     
-    # Plot individual energy components
-    ax1.plot(times, kinetic_energy, 'r-', label='Kinetic Energy', linewidth=2)
-    ax1.plot(times, potential_energy, 'b-', label='Potential Energy', linewidth=2)
-    ax1.plot(times, total_energy, 'k--', label='Total Energy', linewidth=2)
-    ax1.set_xlabel('Time Step')
-    ax1.set_ylabel('Energy')
-    ax1.set_title('Galaxy Energy Evolution')
-    ax1.legend()
-    ax1.grid(True, alpha=0.3)
+    plt.figure(figsize=(12, 8))
     
-    # Plot energy conservation (relative change in total energy)
-    if abs(total_energy[0]) > 1e-10:
-        energy_change = (total_energy - total_energy[0]) / abs(total_energy[0]) * 100
-        ax2.plot(times, energy_change, 'g-', linewidth=2)
-        ax2.set_ylabel('Total Energy Change (%)')
-    else:
-        # If initial energy is zero, plot absolute change instead
-        energy_change = total_energy - total_energy[0]
-        ax2.plot(times, energy_change, 'g-', linewidth=2)
-        ax2.set_ylabel('Absolute Energy Change')
-    ax2.set_xlabel('Time Step')
-    if abs(total_energy[0]) > 1e-10:
-        ax2.set_title('Energy Conservation (Relative Change in Total Energy)')
-    else:
-        ax2.set_title('Energy Conservation (Absolute Change in Total Energy)')
-    ax2.grid(True, alpha=0.3)
-    ax2.axhline(y=0, color='k', linestyle='--', alpha=0.5)
-    
-    # Plot energy gradient (drift rate)
-    energy_gradient = np.gradient(total_energy)
-    ax3.plot(times[1:], energy_gradient[1:], 'purple', linewidth=1)
-    ax3.set_xlabel('Time Step')
-    ax3.set_ylabel('Energy Drift Rate')
-    ax3.set_title('Energy Drift Rate (Gradient of Total Energy)')
-    ax3.grid(True, alpha=0.3)
-    ax3.axhline(y=0, color='k', linestyle='--', alpha=0.5)
-    
-    plt.tight_layout()
-    plt.savefig(save_filename, dpi=150, bbox_inches='tight')
-    #plt.show()
-    
-    print(f"Energy plot saved as: {save_filename}")
-
-
-def track_escapers(trajectory, galaxy_radius):
-    """
-    Track the number of stars that escape beyond a threshold radius at each time step.
-    Returns arrays of max radius, mean radius, and escaper count per time step.
-    """
-    n_steps, n_stars, _ = trajectory.shape
-    max_radius = np.zeros(n_steps)
-    mean_radius = np.zeros(n_steps)
-    escaper_count = np.zeros(n_steps, dtype=int)
-    threshold = 2.5 * galaxy_radius  # Escaper threshold
-    for t in range(n_steps):
-        pos = trajectory[t]
-        radii = np.linalg.norm(pos, axis=1)
-        max_radius[t] = np.max(radii)
-        mean_radius[t] = np.mean(radii)
-        escaper_count[t] = np.sum(radii > threshold)
-    return max_radius, mean_radius, escaper_count
-
-
-def plot_galaxy(trajectory, velocities_history, masses, n_stars=100, save_plots=True, dt=0.02, theta=0.5, softening=0.1, galaxy_radius=10.0, escaper_counts=None):
-    """
-    Create visualizations of the galaxy simulation.
-    
-    Parameters
-    ----------
-    trajectory : ndarray
-        Position trajectory from simulation
-    velocities_history : ndarray
-        Velocity history from simulation
-    masses : ndarray
-        Particle masses
-    n_stars : int
-        Number of stars
-    save_plots : bool
-        Whether to save plots to files
-    dt : float
-        Time step used (for analysis)
-    theta : float
-        Barnes-Hut parameter used
-    softening : float
-        Softening parameter used
-    """
-    n_steps = trajectory.shape[0] - 1
-    
-    # Create animations
-    create_galaxy_animation(trajectory, 'galaxy_evolution.gif')
-    create_galaxy_animation_3d(trajectory, 'galaxy_evolution_3d.gif')
-    
-    # Calculate and plot energy evolution
-    times, kinetic_energy, potential_energy, total_energy = calculate_total_energy(
-        trajectory, velocities_history, masses
-    )
-    plot_energy_evolution(times, kinetic_energy, potential_energy, total_energy, 'galaxy_energy.png')
-    
-    # Analyze energy conservation
-    analysis = analyze_energy_conservation(trajectory, velocities_history, masses, dt)
-    suggest_improvements(analysis, dt, theta, softening)
-    
-    # Plot escaper counts if available
-    if escaper_counts is not None:
-        plt.figure(figsize=(10, 6))
-        plt.plot(escaper_counts, 'r-', linewidth=2)
-        plt.xlabel('Time Step')
-        plt.ylabel('Number of Stars')
-        plt.title('Star Count Over Time')
-        plt.grid(True, alpha=0.3)
-        if save_plots:
-            plt.savefig('galaxy_star_count.png', dpi=150, bbox_inches='tight')
-        #plt.show()
-        print(f"Star count plot saved as: galaxy_star_count.png")
-    
-    # Additional 3D snapshot plot
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
-    
-    final = trajectory[-1]
-    # Remove NaN values for final plot
-    valid_mask = ~np.isnan(final[:, 0])
-    final_valid = final[valid_mask]
-    ax.scatter(final_valid[:, 0], final_valid[:, 1], final_valid[:, 2], alpha=0.6, s=20)
-    ax.set_title(f'3D View of Final Galaxy\n{len(final_valid)} Stars Remaining')
-    ax.set_xlabel('X Position')
-    ax.set_ylabel('Y Position')
-    ax.set_zlabel('Z Position')
-    
-    if save_plots:
-        plt.savefig('galaxy_3d.png', dpi=150, bbox_inches='tight')
-    #plt.show()
-    
-    # Print energy statistics
-    print(f"\nEnergy Statistics:")
-    print(f"  Initial total energy: {total_energy[0]:.4f}")
-    print(f"  Final total energy: {total_energy[-1]:.4f}")
-    
-    # Handle divide by zero for energy change calculation
-    if abs(total_energy[0]) > 1e-10:  # Non-zero initial energy
-        energy_change_percent = ((total_energy[-1] - total_energy[0])/abs(total_energy[0])*100)
-        print(f"  Energy change: {energy_change_percent:.2f}%")
-        
-        # Energy conservation quality
-        relative_change = abs((total_energy[-1] - total_energy[0])/total_energy[0])
-        if relative_change < 0.001:
-            quality = "Excellent"
-        elif relative_change < 0.01:
-            quality = "Good"
-        else:
-            quality = "Fair"
-        print(f"  Energy conservation quality: {quality}")
-    else:
-        # Initial energy is zero (likely due to escaper removal or edge case)
-        print(f"  Energy change: N/A (initial energy near zero)")
-        print(f"  Energy conservation quality: N/A (cannot assess with zero initial energy)")
-    
-    # Track escapers
-    max_radius, mean_radius, escaper_count = track_escapers(trajectory, galaxy_radius)
-    plt.figure(figsize=(10, 6))
-    plt.plot(max_radius, label='Max Radius')
-    plt.plot(mean_radius, label='Mean Radius')
-    plt.plot(escaper_count, label='Escaper Count (>2.5×radius)')
-    plt.xlabel('Time Step')
-    plt.ylabel('Radius / Count')
-    plt.title('Galaxy Radius and Escaper Tracking')
+    # Energy vs time
+    plt.subplot(2, 1, 1)
+    plt.plot(times, kinetic_history, label='Kinetic Energy', color='red')
+    plt.plot(times, potential_history, label='Potential Energy', color='blue')
+    plt.plot(times, total_history, label='Total Energy', color='black', linewidth=2)
+    plt.xlabel('Time')
+    plt.ylabel('Energy')
+    plt.title('Energy Conservation During Galaxy Simulation')
     plt.legend()
     plt.grid(True, alpha=0.3)
-    plt.savefig('galaxy_escapers.png', dpi=150, bbox_inches='tight')
+    
+    # Energy change vs time
+    plt.subplot(2, 1, 2)
+    initial_total = total_history[0]
+    energy_change = (total_history - initial_total) / abs(initial_total)
+    plt.plot(times, energy_change, color='purple', linewidth=2)
+    plt.xlabel('Time')
+    plt.ylabel('Relative Energy Change')
+    plt.title('Relative Total Energy Change')
+    plt.grid(True, alpha=0.3)
+    plt.yscale('symlog', linthresh=1e-10)
+    
+    plt.tight_layout()
+    plt.savefig('energy_conservation.png', dpi=150, bbox_inches='tight')
     #plt.show()
-    print(f"Escaper plot saved as: galaxy_escapers.png")
-    print(f"Max escaper count: {np.max(escaper_count)} at step {np.argmax(escaper_count)}")
 
 
-def main():
+def main(
+    n_stars=50,
+    t_end=1.0,
+    method='RK45',
+    rtol=1e-3,
+    atol=1e-6,
+    theta=0.3,
+    softening=0.1,
+    galaxy_radius=10.0,
+    remove_escapers=False,
+    escaper_threshold=2.5,
+    progress_steps=10,
+    frames_per_time_unit=50
+):
     """
     Main function to run the galaxy simulation.
+    Parameters are now passed as arguments for flexibility.
+    
+    Parameters
+    ----------
+    n_stars : int
+        Number of stars in the galaxy
+    t_end : float
+        Total simulation time
+    method : str
+        Integration method ('RK45', 'DOP853', 'Radau', 'BDF', 'LSODA')
+    rtol : float
+        Relative tolerance for the integrator
+    atol : float
+        Absolute tolerance for the integrator
+    theta : float
+        Barnes-Hut approximation parameter
+    softening : float
+        Gravitational softening parameter
+    galaxy_radius : float
+        Characteristic radius of the galaxy
+    remove_escapers : bool
+        If True, remove stars that escape beyond escaper_threshold * galaxy_radius
+    escaper_threshold : float
+        Multiplier for galaxy_radius to define escaper removal distance
+    progress_steps : int
+        Number of integration chunks for progress reporting (default: 10)
+    frames_per_time_unit : int
+        Number of animation frames per simulation time unit (default: 50)
     """
     print("=" * 60)
     print("Galaxy Simulation using bhut Barnes-Hut N-body Accelerator")
     print("=" * 60)
-    
-    # Simulation parameters - optimized for energy conservation
-    n_stars = 200
-    n_steps = 1000  # More steps with smaller dt
-    dt = 0.02     # Smaller time step for better energy conservation
-    theta = 0.3   # Stricter Barnes-Hut criterion for better accuracy
-    softening = 0.1  # Smaller softening for more realistic forces
-    
+
     print(f"\nSimulation Parameters:")
     print(f"  Number of stars: {n_stars}")
-    print(f"  Number of time steps: {n_steps}")
-    print(f"  Time step: {dt}")
+    print(f"  Integration method: {method}")
+    print(f"  Simulation time: {t_end}")
+    print(f"  Relative tolerance: {rtol}")
+    print(f"  Absolute tolerance: {atol}")
     print(f"  Barnes-Hut theta: {theta}")
     print(f"  Gravitational softening: {softening}")
+    print(f"  Galaxy radius: {galaxy_radius}")
+    print(f"  Remove escapers: {remove_escapers}")
+    if remove_escapers:
+        print(f"  Escaper threshold: {escaper_threshold}")
     print()
-    
+
     # Run simulation
-    trajectory, velocities_history, final_masses, escaper_counts = simulate_galaxy(
+    result = simulate_galaxy(
         n_stars=n_stars,
-        n_steps=n_steps,
-        dt=dt,
+        t_end=t_end,
         theta=theta,
         softening=softening,
-        galaxy_radius=10.0,
-        remove_escapers=False  # Set to True to enable escaper removal
+        galaxy_radius=galaxy_radius,
+        remove_escapers=remove_escapers,
+        escaper_threshold=escaper_threshold,
+        method=method,
+        rtol=rtol,
+        atol=atol,
+        progress_steps=progress_steps,
+        frames_per_time_unit=frames_per_time_unit
     )
-    
+    trajectory, velocities_history, final_masses, escaper_counts, times = result
+
     # Use final masses from simulation (in case escapers were removed)
     masses = final_masses
     
-    # Create visualizations
-    print("\nCreating visualizations...")
-    plot_galaxy(trajectory, velocities_history, masses, n_stars=n_stars, save_plots=True, 
-                dt=dt, theta=theta, softening=softening, galaxy_radius=10.0, escaper_counts=escaper_counts)
+    # Show energy conservation
+    times_energy, kinetic_history, potential_history, total_history = calculate_total_energy(
+        trajectory, velocities_history, masses
+    )
     
-    # Print some statistics
-    initial_spread = np.std(trajectory[0], axis=0)
-    final_spread = np.std(trajectory[-1], axis=0)
+    print(f"Final energy conservation check:")
+    initial_energy = total_history[0]
+    final_energy = total_history[-1]
+    energy_change = abs(final_energy - initial_energy) / abs(initial_energy)
+    print(f"  Initial total energy: {initial_energy:.6f}")
+    print(f"  Final total energy: {final_energy:.6f}")
+    print(f"  Relative energy change: {energy_change:.2e}")
     
-    print(f"\nSimulation Statistics:")
-    print(f"  Initial position spread (std): X={initial_spread[0]:.2f}, Y={initial_spread[1]:.2f}, Z={initial_spread[2]:.2f}")
-    print(f"  Final position spread (std):   X={final_spread[0]:.2f}, Y={final_spread[1]:.2f}, Z={final_spread[2]:.2f}")
+    if remove_escapers:
+        print(f"\nEscaper Statistics:")
+        print(f"  Stars removed: {escaper_counts[-1]}")
+        print(f"  Remaining stars: {n_stars - escaper_counts[-1]}")
     
-    # Calculate center of mass drift (should be minimal)
-    com_drift = np.linalg.norm(np.mean(trajectory[-1], axis=0) - np.mean(trajectory[0], axis=0))
-    print(f"  Center of mass drift: {com_drift:.4f}")
+    print("\nCreating animations...")
     
-    print("\nSimulation complete! Check the generated files:")
-    print("  - galaxy_evolution.gif: Animated movie of galaxy evolution")
-    print("  - galaxy_3d.png: 3D view of final galaxy")
-    print("  - galaxy_energy.png: Total energy evolution")
+    # Create animations
+    create_galaxy_animation(trajectory, save_filename="galaxy_2d_animation.gif")
+    create_galaxy_animation_3d(trajectory, save_filename="galaxy_3d_animation.gif")
+    
+    # Create energy plot
+    plot_energy_conservation(times_energy, kinetic_history, potential_history, total_history)
+    
+    print(f"\nSimulation completed successfully!")
+    print(f"Animations saved as 'galaxy_2d_animation.gif' and 'galaxy_3d_animation.gif'")
+    print(f"Energy plot saved as 'energy_conservation.png'")
 
 
 if __name__ == "__main__":
-    main()
+    # Example usage: pass parameters here or use defaults
+    main(
+        n_stars=200,
+        t_end=20.0,
+        method='RK45',
+        rtol=1e-3,
+        atol=1e-6,
+        theta=0.3,
+        softening=0.1,
+        galaxy_radius=10.0,
+        remove_escapers=False,
+        escaper_threshold=2.5,
+        frames_per_time_unit=10
+    )
