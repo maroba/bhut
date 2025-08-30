@@ -10,6 +10,12 @@ A high-performance Barnes-Hut N-body accelerator that is array-agnostic, support
 [![PyPI](https://img.shields.io/pypi/v/bhut.svg)](https://pypi.org/project/bhut/)
 [![Python](https://img.shields.io/pypi/pyversions/bhut.svg)](https://pypi.org/project/bhut/)
 
+## Documentation
+
+Full documentation is available at:
+
+**https://maroba.github.io/bhut/**
+
 ## Installation
 
 ```bash
