@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://&lt;YOUR_GH_USERNAME&gt;.github.io/bhut/</loc>
+         <lastmod>2025-08-30</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;YOUR_GH_USERNAME&gt;.github.io/bhut/getting-started/</loc>
+         <lastmod>2025-08-30</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;YOUR_GH_USERNAME&gt;.github.io/bhut/usage/</loc>
+         <lastmod>2025-08-30</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;YOUR_GH_USERNAME&gt;.github.io/bhut/api/</loc>
+         <lastmod>2025-08-30</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;YOUR_GH_USERNAME&gt;.github.io/bhut/dev/contributing/</loc>
+         <lastmod>2025-08-30</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;YOUR_GH_USERNAME&gt;.github.io/bhut/dev/design/</loc>
+         <lastmod>2025-08-30</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;YOUR_GH_USERNAME&gt;.github.io/bhut/theory/barnes-hut/</loc>
+         <lastmod>2025-08-30</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;YOUR_GH_USERNAME&gt;.github.io/bhut/theory/complexity/</loc>
+         <lastmod>2025-08-30</lastmod>
+    </url>
+</urlset>
