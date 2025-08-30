@@ -1,7 +1,7 @@
 # bhut
 
 <div align="center">
-  <img src="docs/assets/logo.png" alt="bhut logo" width="200"/>
+  <img src="https://github.com/bhut-dev/bhut/raw/main/docs/assets/logo.png" alt="bhut logo" width="200"/>
 </div>
 
 A high-performance Barnes-Hut N-body accelerator that is array-agnostic, supporting both NumPy and Dask arrays for distributed computation.
