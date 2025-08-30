@@ -4,7 +4,7 @@
   <img src="https://github.com/maroba/bhut/raw/main/docs/assets/logo.png" alt="bhut logo" width="200"/>
 </div>
 
-A high-performance Barnes-Hut N-body accelerator that is array-agnostic, supporting both NumPy and Dask arrays for distributed computation.
+A high-performance Barnes-Hut N-body accelerator in Python that is array-agnostic, supporting both NumPy and Dask arrays for distributed computation.
 
 [![CI](https://github.com/maroba/bhut/workflows/CI/badge.svg)](https://github.com/maroba/bhut/actions)
 [![PyPI](https://img.shields.io/pypi/v/bhut.svg)](https://pypi.org/project/bhut/)
