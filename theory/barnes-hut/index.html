@@ -791,6 +791,24 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#plummer-softening" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plummer Softening
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quadtreeoctree-split-mermaid" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quadtree/Octree Split (Mermaid)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#center-of-mass-calculation" class="md-nav__link">
     <span class="md-ellipsis">
       Center of Mass Calculation
@@ -967,6 +985,24 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#plummer-softening" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plummer Softening
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quadtreeoctree-split-mermaid" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quadtree/Octree Split (Mermaid)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#center-of-mass-calculation" class="md-nav__link">
     <span class="md-ellipsis">
       Center of Mass Calculation
@@ -1050,6 +1086,20 @@
 <h3 id="softened-force">Softened Force<a class="headerlink" href="#softened-force" title="Permanent link">&para;</a></h3>
 <p>To avoid singularities at small distances, a softening parameter <span class="arithmatex">\(\epsilon\)</span> is often used:</p>
 <div class="arithmatex">\[\vec{F}_{ij} = -G \frac{m_i m_j}{(|\vec{r}_{ij}|^2 + \epsilon^2)^{3/2}} \vec{r}_{ij}\]</div>
+<h2 id="plummer-softening">Plummer Softening<a class="headerlink" href="#plummer-softening" title="Permanent link">&para;</a></h2>
+<p>We use Plummer softening:
+[
+\Phi_i = -G \sum_{j \ne i} \frac{m_j}{\sqrt{|\mathbf{r}_i-\mathbf{r}_j|^2 + \varepsilon^2}},
+\qquad
+\mathbf{a}_i = -\nabla \Phi_i
+]</p>
+<h2 id="quadtreeoctree-split-mermaid">Quadtree/Octree Split (Mermaid)<a class="headerlink" href="#quadtreeoctree-split-mermaid" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph TD
+  R[Root Cell]
+  R --&gt; C1[Child 1]
+  R --&gt; C2[Child 2]
+  R --&gt; C3[Child 3]
+  R --&gt; C4[Child 4]</code></pre>
 <h2 id="center-of-mass-calculation">Center of Mass Calculation<a class="headerlink" href="#center-of-mass-calculation" title="Permanent link">&para;</a></h2>
 <p>For each tree node, the center of mass and total mass are computed:</p>
 <div class="arithmatex">\[\vec{R}_{cm} = \frac{\sum_i m_i \vec{r}_i}{\sum_i m_i}\]</div>
