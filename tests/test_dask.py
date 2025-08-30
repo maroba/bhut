@@ -8,6 +8,15 @@ chunking strategies, and consistency with NumPy backend.
 import numpy as np
 import pytest
 
+try:
+    import dask.array as da
+    from dask.array import Array as DaskArray
+    DASK_AVAILABLE = True
+except ImportError:
+    da = None
+    DaskArray = None
+    DASK_AVAILABLE = False
+
 import bhut
 
 
@@ -24,6 +33,16 @@ class TestDaskIntegration:
             pytest.skip("Dask backend module not available")
 
     def test_dask_basic_functionality(self):
+        """Test basic Dask functionality."""
+        try:
+            import dask.array as da
+            # Basic test that Dask arrays work
+            arr = da.ones((10, 3), chunks=(5, 3))
+            assert arr.shape == (10, 3)
+        except ImportError:
+            pytest.skip("Dask not available")
+
+
 class TestDaskBackend:
     """Test Dask backend functionality."""
 
