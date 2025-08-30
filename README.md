@@ -157,51 +157,12 @@ print(f"Numba acceleration: {'✓ Available' if HAVE_NUMBA else '✗ Not availab
 - ** Distributed**: Built-in Dask integration for large-scale computation
 - ** Accurate**: Configurable Barnes-Hut approximation with error control
 - ** Efficient Updates**: Tree refit/rebuild for time-stepping simulations
-- ** Deterministic**: Stable Morton ordering ensures reproducible results
-- ** Multi-dimensional**: Support for 2D and 3D spatial problems
-- ** Thoroughly Tested**: Comprehensive test suite with 153+ tests covering unit, integration, performance, validation, and edge cases
 
-## API Reference
+## Parameter Tuning Guide
 
-### Core Functions
+### Opening Angle (`theta`)
 
-#### `bhut.accelerations(positions, masses, **kwargs)`
-
-Compute gravitational accelerations using the Barnes-Hut algorithm.
-
-**Parameters:**
-- `positions` *(array_like)*: Particle positions, shape `(N, dim)`
-- `masses` *(array_like)*: Particle masses, shape `(N,)`
-- `theta` *(float, default=0.5)*: Opening angle criterion
-- `softening` *(float, default=0.0)*: Gravitational softening length
-- `G` *(float, default=1.0)*: Gravitational constant
-- `dim` *(int, default=3)*: Spatial dimensions (2 or 3)
-- `backend` *(str, default="auto")*: Array backend ("numpy", "dask", "auto")
-- `leaf_size` *(int, default=32)*: Maximum particles per leaf node
-
-**Returns:**
-- `accelerations` *(array_like)*: Gravitational accelerations, shape `(N, dim)`
-
-### Tree Class
-
-#### `Tree(positions, masses, **kwargs)`
-
-Object-oriented interface for Barnes-Hut tree operations.
-
-**Constructor Parameters:**
-- `positions` *(array_like)*: Particle positions, shape `(N, dim)`
-- `masses` *(array_like)*: Particle masses, shape `(N,)`
-- `leaf_size` *(int, default=32)*: Maximum particles per leaf node
-- `backend` *(str, default="auto")*: Array backend ("numpy", "dask", "auto")
-- `dim` *(int, default=3)*: Spatial dimensions (2 or 3)
-
-**Methods:**
-- `build()`: Construct the tree structure (required before first use)
-- `accelerations(targets=None, theta=0.5, **kwargs)`: Evaluate accelerations
-- `refit(new_positions, new_masses=None)`: Update tree with new positions
-- `rebuild(new_positions, new_masses=None)`: Reconstruct tree completely
-
-**Important:** Always call `tree.build()` after creating a Tree and before calling other methods. The `theta` parameter is passed to the `accelerations()` method, not the constructor.
+Controls the accuracy-performance tradeoff:
 
 ## Parameter Tuning Guide
 
