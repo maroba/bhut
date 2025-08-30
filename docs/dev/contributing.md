@@ -83,6 +83,16 @@ mypy bhut/
 mypy --strict bhut/
 ```
 
+## Documentation Preview
+
+To preview the documentation locally:
+
+```bash
+./scripts/preview_docs.sh
+```
+
+This script installs the required dependencies and starts a local server at http://localhost:8000. It is executable by default.
+
 ## Pull Request Guidelines
 
 ### Before Submitting

@@ -57,6 +57,26 @@ To avoid singularities at small distances, a softening parameter $\epsilon$ is o
 
 $$\vec{F}_{ij} = -G \frac{m_i m_j}{(|\vec{r}_{ij}|^2 + \epsilon^2)^{3/2}} \vec{r}_{ij}$$
 
+## Plummer Softening
+
+We use Plummer softening:
+\[
+\Phi_i = -G \sum_{j \ne i} \frac{m_j}{\sqrt{\|\mathbf{r}_i-\mathbf{r}_j\|^2 + \varepsilon^2}},
+\qquad
+\mathbf{a}_i = -\nabla \Phi_i
+\]
+
+## Quadtree/Octree Split (Mermaid)
+
+```mermaid
+graph TD
+  R[Root Cell]
+  R --> C1[Child 1]
+  R --> C2[Child 2]
+  R --> C3[Child 3]
+  R --> C4[Child 4]
+```
+
 ## Center of Mass Calculation
 
 For each tree node, the center of mass and total mass are computed:
