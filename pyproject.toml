@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bhut"
+version = "0.1.0"
+description = "Barnes-Hut N-body accelerator that is array-agnostic (NumPy/Dask)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "bhut contributors" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = ["numpy>=1.23", "dask[array]>=2024.1.0"]
+
+[project.optional-dependencies]
+accel = ["numba>=0.59"]
+dev = ["pytest", "hypothesis", "pytest-cov", "ruff", "mypy"]
+
+[project.urls]
+Homepage = "https://github.com/bhut-dev/bhut"
+Repository = "https://github.com/bhut-dev/bhut"
+
+[tool.setuptools.packages.find]
+include = ["bhut*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["demo*.py", "test_*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = [
+    "E501", # line too long (handled by line-length)
+    "F401", # imported but unused (some are intentional for API)
+    "F841", # assigned but unused (some are intentional in tests)
+    "B007", # unused loop variable (common in range loops)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["bhut"]
+force-single-line = false
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
