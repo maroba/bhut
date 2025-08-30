@@ -280,7 +280,7 @@ If you use bhut in your research, please cite:
 ```bibtex
 @software{bhut,
   title={bhut: A Barnes-Hut N-body Accelerator},
-  author={Your Name},
+  author={Matthias Baer},
   url={https://github.com/your-org/bhut},
   year={2025}
 }
